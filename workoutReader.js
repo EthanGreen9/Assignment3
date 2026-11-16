@@ -1,37 +1,47 @@
-
 const fs = require('fs');
 const csv = require('csv-parser');
 
-function workoutCalculator(filePath) {
+async function readWorkoutData(filepath) {
     return new Promise((resolve, reject) => {
-        const workouts = [];
+        const results = [];
 
-        fs.createReadStream(filePath)
-            .on('error', reject)
+        fs.createReadStream(filepath)
+            .on('error', (error) => {
+                reject(error);
+            })
             .pipe(csv())
-            .on('data', row => workouts.push(row))
-            .on('error', reject)
+            .on('data', (row) => {
+                results.push(row);
+            })
             .on('end', () => {
-                let totalMinutes = 0;
-
-                for (let i = 0; i < workouts.length; i++) {
-                    const minutes = Number(workouts[i].duration);
-
-                    if (!Number.isFinite(minutes) ||
-                        workouts[i].duration?.trim() === '') {
-                        reject(new Error('Invalid workout minutes'));
-                        return;
-                    }
-
-                    totalMinutes += minutes;
-                }
-
-                resolve({
-                    totalWorkouts: workouts.length,
-                    totalMinutes: totalMinutes
-                });
+                resolve(results);
+            })
+            .on('error', (error) => {
+                reject(error);
             });
     });
+}
+
+async function workoutCalculator(filepath) {
+    try {
+        const workouts = await readWorkoutData(filepath);
+        let totalWorkouts = workouts.length;
+        let totalMinutes = 0;
+
+        for (let i = 0; i < workouts.length; i++) {
+            totalMinutes += parseFloat(workouts[i].duration);
+        }
+
+        return { totalWorkouts, totalMinutes };
+
+    } catch (error) {
+        if (error.code === 'ENOENT') {
+            console.log('CSV file not found');
+        } else {
+            console.log('Error processing CSV file:', error.message);
+        }
+        return null;
+    }
 }
 
 module.exports = { workoutCalculator };
