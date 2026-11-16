@@ -7,7 +7,7 @@ const { workoutCalculator } = require('./workoutReader');
 async function processFiles() {
     try {
         const name = process.env.USER_NAME;
-        const goal = Number(process.env.WEEKLY_GOAL);
+        const goal = parseFloat(process.env.WEEKLY_GOAL);
 
         console.log('Processing data for: ' + name);
 
